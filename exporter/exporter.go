@@ -116,7 +116,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.scrapeErrors.Desc()
 }
 
-// Collect fetches info from the AWS API and the BanzaiCloud recommendation API
+// Collect fetches info from the AWS API
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	groupScrapes := make(chan GroupScrapeResult)
@@ -128,7 +128,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	go e.scrape(groupScrapes)
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		e.setGroupMetrics(groupScrapes)
@@ -265,14 +265,6 @@ func (e *Exporter) scrapeAsg(groupScrapes chan<- GroupScrapeResult, asg *autosca
 		Value:            float64(standbyInstances),
 		AutoScalingGroup: *asg.AutoScalingGroupName,
 		Region:           *e.session.Config.Region,
-	}
-
-	if len(instanceIds) > 0 {
-		var err error
-		log.WithField("autoScalingGroup", *asg.AutoScalingGroupName).Debug("getting metrics from the instances in the autoscaling group")
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
