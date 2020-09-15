@@ -4,7 +4,7 @@ import (
 	"flag"
 	"net/http"
 
-	"github.com/banzaicloud/aws-autoscaling-exporter/exporter"
+	"./exporter"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -15,9 +15,8 @@ var (
 	addr           = flag.String("listen-address", ":8089", "The address to listen on for HTTP requests.")
 	metricsPath    = flag.String("metrics-path", "/metrics", "path to metrics endpoint")
 	rawLevel       = flag.String("log-level", "info", "log level")
-	region         = flag.String("region", "eu-west-1", "AWS region that the exporter should query")
+	region         = flag.String("region", "eu-central-1", "AWS region that the exporter should query")
 	groupsFlag     = flag.String("auto-scaling-groups", "", "Comma separated list of auto scaling groups to monitor. Empty value means all groups in the region.")
-	recommenderUrl = flag.String("recommender-url", "http://localhost:9090", "URL of the spot instance recommender")
 )
 
 func init() {
@@ -39,7 +38,7 @@ func main() {
 	if *groupsFlag != "" {
 		groups = strings.Split(strings.Replace(*groupsFlag, " ", "", -1), ",")
 	}
-	exporter, err := exporter.NewExporter(*region, groups, *recommenderUrl)
+	exporter, err := exporter.NewExporter(*region, groups)
 	if err != nil {
 		log.Fatal(err)
 	}
