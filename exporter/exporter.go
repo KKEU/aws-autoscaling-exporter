@@ -1,7 +1,6 @@
 package exporter
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -31,24 +30,6 @@ type GroupScrapeResult struct {
 	Value            float64
 	AutoScalingGroup string
 	Region           string
-}
-
-type InstanceScrapeResult struct {
-	Name             string
-	Value            float64
-	AutoScalingGroup string
-	Region           string
-	InstanceId       string
-	AvailabilityZone string
-	InstanceType     string
-}
-
-type instanceScrapeError struct {
-	count uint64
-}
-
-func (e *instanceScrapeError) Error() string {
-	return fmt.Sprintf("Error count: %d", e.count)
 }
 
 // NewExporter returns a new exporter of AWS Autoscaling group metrics.
@@ -161,9 +142,6 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	for _, m := range e.groupMetrics {
 		m.Collect(ch)
 	}
-	for _, m := range e.instanceMetrics {
-		m.Collect(ch)
-	}
 }
 
 func (e *Exporter) scrape(groupScrapes chan<- GroupScrapeResult) {
@@ -202,11 +180,7 @@ func (e *Exporter) scrape(groupScrapes chan<- GroupScrapeResult) {
 				}
 				if err := e.scrapeAsg(groupScrapes, asg); err != nil {
 					log.WithField("autoScalingGroup", *asg.AutoScalingGroupName).Error(err)
-					if e, ok := err.(*instanceScrapeError); ok {
-						atomic.AddUint64(&errorCount, e.count)
-					} else {
-						atomic.AddUint64(&errorCount, 1)
-					}
+					atomic.AddUint64(&errorCount, 1)
 
 				}
 			}(asg)
@@ -293,17 +267,12 @@ func (e *Exporter) scrapeAsg(groupScrapes chan<- GroupScrapeResult, asg *autosca
 		Region:           *e.session.Config.Region,
 	}
 
-	var countError *instanceScrapeError
 	if len(instanceIds) > 0 {
 		var err error
 		log.WithField("autoScalingGroup", *asg.AutoScalingGroupName).Debug("getting metrics from the instances in the autoscaling group")
 		if err != nil {
 			return err
 		}
-	}
-
-	if countError != nil {
-		return countError
 	}
 	return nil
 }
