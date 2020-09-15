@@ -4,7 +4,7 @@ import (
 	"flag"
 	"net/http"
 
-	"./exporter"
+	"github.com/ZyanKLee/aws-autoscaling-exporter/exporter"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
