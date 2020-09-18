@@ -1,8 +1,8 @@
 # build stage
-FROM golang:1.9.3-alpine3.7
+FROM golang:1.15.2-alpine
 
-ADD . /go/src/github.com/ZyanKLee/aws-autoscaling-exporter
-WORKDIR /go/src/github.com/ZyanKLee/aws-autoscaling-exporter
+COPY . /go/src/github.com/KKEU/aws-autoscaling-exporter
+WORKDIR /go/src/github.com/KKEU/aws-autoscaling-exporter
 RUN go build -o /bin/aws-autoscaling-exporter .
 
 FROM alpine:latest
