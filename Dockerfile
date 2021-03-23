@@ -1,5 +1,5 @@
 # build stage
-FROM golang:1.15.2-alpine
+FROM golang:1.16.2-alpine
 
 COPY . /go/src/github.com/KKEU/aws-autoscaling-exporter
 WORKDIR /go/src/github.com/KKEU/aws-autoscaling-exporter
