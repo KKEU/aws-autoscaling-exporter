@@ -4,19 +4,21 @@ import (
 	"flag"
 	"net/http"
 
+	"strings"
+
 	"github.com/KKEU/aws-autoscaling-exporter/exporter"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	"strings"
 )
 
 var (
-	addr           = flag.String("listen-address", ":8089", "The address to listen on for HTTP requests.")
-	metricsPath    = flag.String("metrics-path", "/metrics", "path to metrics endpoint")
-	rawLevel       = flag.String("log-level", "info", "log level")
-	region         = flag.String("region", "eu-central-1", "AWS region that the exporter should query")
-	groupsFlag     = flag.String("auto-scaling-groups", "", "Comma separated list of auto scaling groups to monitor. Empty value means all groups in the region.")
+	addr         = flag.String("listen-address", ":8089", "The address to listen on for HTTP requests.")
+	metricsPath  = flag.String("metrics-path", "/metrics", "path to metrics endpoint")
+	rawLevel     = flag.String("log-level", "info", "log level")
+	region       = flag.String("region", "eu-central-1", "AWS region that the exporter should query")
+	groupsFlag   = flag.String("auto-scaling-groups", "", "Comma separated list of auto scaling groups to monitor. Empty value means all groups in the region.\nExamples: '.*' or 'SomeName-[^/]-SomeOtherString'")
+	groupsFilter = flag.String("groups-filter", "", "Regex filter to limit the groups monitored.")
 )
 
 func init() {
@@ -38,7 +40,8 @@ func main() {
 	if *groupsFlag != "" {
 		groups = strings.Split(strings.Replace(*groupsFlag, " ", "", -1), ",")
 	}
-	exporter, err := exporter.NewExporter(*region, groups)
+
+	exporter, err := exporter.NewExporter(*region, groups, *groupsFilter)
 	if err != nil {
 		log.Fatal(err)
 	}

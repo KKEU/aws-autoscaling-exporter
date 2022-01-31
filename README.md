@@ -16,6 +16,11 @@ The following options can be configured when starting the exporter:
 ```
 ./aws-autoscaling-exporter --help
 Usage of ./aws-autoscaling-exporter:
+  -auto-scaling-groups
+        Comma separated list of auto scaling groups to monitor. Empty value means all groups in the region.
+  -groups-filter
+        Regex filter to limit the ASGs that are scraped. If `-groups-filter` is set `-auto-scaling-groups` is being ignored.
+        Examples: '.*' or 'SomeName-[^/]-SomeOtherString' 
   -listen-address string
         The address to listen on for HTTP requests. (default ":8089")
   -log-level string
