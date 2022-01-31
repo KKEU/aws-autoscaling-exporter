@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"regexp"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,6 +17,7 @@ import (
 type Exporter struct {
 	session         *session.Session
 	groups          []string
+	groupsFilter    string
 	duration        prometheus.Gauge
 	scrapeErrors    prometheus.Gauge
 	totalScrapes    prometheus.Counter
@@ -33,7 +35,7 @@ type GroupScrapeResult struct {
 }
 
 // NewExporter returns a new exporter of AWS Autoscaling group metrics.
-func NewExporter(region string, groups []string) (*Exporter, error) {
+func NewExporter(region string, groups []string, groupsFilter string) (*Exporter, error) {
 
 	session, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
@@ -44,8 +46,9 @@ func NewExporter(region string, groups []string) (*Exporter, error) {
 	}
 
 	e := Exporter{
-		session:        session,
-		groups:         groups,
+		session:      session,
+		groups:       groups,
+		groupsFilter: groupsFilter,
 		duration: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: "aws_autoscaling",
 			Name:      "scrape_duration_seconds",
@@ -153,12 +156,23 @@ func (e *Exporter) scrape(groupScrapes chan<- GroupScrapeResult) {
 	var errorCount uint64 = 0
 
 	asgSvc := autoscaling.New(e.session, aws.NewConfig())
+
 	err := asgSvc.DescribeAutoScalingGroupsPages(&autoscaling.DescribeAutoScalingGroupsInput{
 		AutoScalingGroupNames: aws.StringSlice(e.groups),
 	}, func(result *autoscaling.DescribeAutoScalingGroupsOutput, lastPage bool) bool {
 		log.Debugf("Number of AutoScaling Groups found: %d [lastPage = %t]", len(result.AutoScalingGroups), lastPage)
 		var wg sync.WaitGroup
 		for _, asg := range result.AutoScalingGroups {
+			if e.groupsFilter != "" && asg.AutoScalingGroupName != nil {
+				matched, err := regexp.MatchString(e.groupsFilter, *asg.AutoScalingGroupName)
+				if err != nil {
+					log.WithError(err).Error("Regex matching failed")
+					atomic.AddUint64(&errorCount, 1)
+				}
+				if !matched {
+					continue
+				}
+			}
 			log.Debug("scraping: ", *asg.AutoScalingGroupName)
 			wg.Add(1)
 			go func(asg *autoscaling.Group) {
